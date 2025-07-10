@@ -1,4 +1,4 @@
-const nodemailer = require("nodemailer")
+const nodemailer = require("nodemailer");
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -8,7 +8,7 @@ const transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
-})
+});
 
 const sendWelcomeEmail = async (email, username, userType) => {
   const mailOptions = {
@@ -20,8 +20,8 @@ const sendWelcomeEmail = async (email, username, userType) => {
         <h2 style="color: #333;">Welcome to Pixisphere, ${username}!</h2>
         <p>Thank you for joining Pixisphere as a ${userType}. We're excited to have you on board!</p>
         ${
-          userType === "partner"
-            ? `
+  userType === "partner"
+    ? `
         <p>As a partner, you can now:</p>
         <ul>
           <li>Create your professional profile</li>
@@ -30,7 +30,7 @@ const sendWelcomeEmail = async (email, username, userType) => {
           <li>Connect with potential clients</li>
         </ul>
         `
-            : `
+    : `
         <p>As a client, you can now:</p>
         <ul>
           <li>Browse professional photographers and videographers</li>
@@ -39,7 +39,7 @@ const sendWelcomeEmail = async (email, username, userType) => {
           <li>Manage your bookings</li>
         </ul>
         `
-        }
+}
         <div style="text-align: center; margin: 30px 0;">
           <a href="${process.env.FRONTEND_URL}/dashboard" 
              style="background-color: #007bff; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
@@ -51,15 +51,15 @@ const sendWelcomeEmail = async (email, username, userType) => {
         </p>
       </div>
     `,
-  }
+  };
 
-  await transporter.sendMail(mailOptions)
-}
+  await transporter.sendMail(mailOptions);
+};
 
 const sendLoginNotification = async (email, username, deviceInfo) => {
   const location = deviceInfo.location
     ? `${deviceInfo.location.city}, ${deviceInfo.location.country}`
-    : "Unknown location"
+    : "Unknown location";
 
   const mailOptions = {
     from: `"Pixisphere Security" <${process.env.FROM_EMAIL}>`,
@@ -79,13 +79,13 @@ const sendLoginNotification = async (email, username, deviceInfo) => {
         <p>If this was you, you can ignore this email. If you don't recognize this activity, please secure your account immediately.</p>
       </div>
     `,
-  }
+  };
 
-  await transporter.sendMail(mailOptions)
-}
+  await transporter.sendMail(mailOptions);
+};
 
 const sendPartnerVerificationEmail = async (email, username, verificationData) => {
-  const { companyName, verificationDate, notes } = verificationData
+  const { companyName, verificationDate, notes } = verificationData;
 
   const mailOptions = {
     from: `"Pixisphere Team" <${process.env.FROM_EMAIL}>`,
@@ -142,13 +142,13 @@ const sendPartnerVerificationEmail = async (email, username, verificationData) =
         </p>
       </div>
     `,
-  }
+  };
 
-  await transporter.sendMail(mailOptions)
-}
+  await transporter.sendMail(mailOptions);
+};
 
 const sendPartnerRejectionEmail = async (email, username, rejectionData) => {
-  const { companyName, reason, notes, rejectionDate } = rejectionData
+  const { companyName, reason, notes, rejectionDate } = rejectionData;
 
   const mailOptions = {
     from: `"Pixisphere Team" <${process.env.FROM_EMAIL}>`,
@@ -201,17 +201,17 @@ const sendPartnerRejectionEmail = async (email, username, rejectionData) => {
         </p>
       </div>
     `,
-  }
+  };
 
-  await transporter.sendMail(mailOptions)
-}
+  await transporter.sendMail(mailOptions);
+};
 
 const sendDocumentStatusEmail = async (email, username, documentData) => {
-  const { documentName, status, reason, notes } = documentData
+  const { documentName, status, reason, notes } = documentData;
 
-  const isApproved = status === "approved"
-  const statusColor = isApproved ? "#28a745" : "#dc3545"
-  const statusText = isApproved ? "Approved" : "Requires Update"
+  const isApproved = status === "approved";
+  const statusColor = isApproved ? "#28a745" : "#dc3545";
+  const statusText = isApproved ? "Approved" : "Requires Update";
 
   const mailOptions = {
     from: `"Pixisphere Team" <${process.env.FROM_EMAIL}>`,
@@ -235,8 +235,8 @@ const sendDocumentStatusEmail = async (email, username, documentData) => {
           </div>
           
           ${
-            !isApproved
-              ? `
+  !isApproved
+    ? `
           <h3 style="color: #333;">Next Steps:</h3>
           <ul style="color: #666;">
             <li>Review the feedback provided</li>
@@ -244,10 +244,10 @@ const sendDocumentStatusEmail = async (email, username, documentData) => {
             <li>Re-upload the corrected document</li>
           </ul>
           `
-              : `
+    : `
           <p style="color: #28a745; font-weight: bold;">✓ This document has been approved and no further action is needed.</p>
           `
-          }
+}
         </div>
         
         <div style="text-align: center; margin: 30px 0;">
@@ -258,10 +258,10 @@ const sendDocumentStatusEmail = async (email, username, documentData) => {
         </div>
       </div>
     `,
-  }
+  };
 
-  await transporter.sendMail(mailOptions)
-}
+  await transporter.sendMail(mailOptions);
+};
 
 module.exports = {
   sendWelcomeEmail,
@@ -269,4 +269,4 @@ module.exports = {
   sendPartnerVerificationEmail,
   sendPartnerRejectionEmail,
   sendDocumentStatusEmail,
-}
+};

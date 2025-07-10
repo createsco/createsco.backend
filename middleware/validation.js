@@ -1,4 +1,4 @@
-const Joi = require("joi")
+const Joi = require("joi");
 
 const validateUserRegistration = (req, res, next) => {
   const schema = Joi.object({
@@ -13,19 +13,19 @@ const validateUserRegistration = (req, res, next) => {
     }).required(),
     address: Joi.string().min(10).max(500).required(),
     firebaseUid: Joi.string().required(),
-  })
+  });
 
-  const { error } = schema.validate(req.body)
+  const { error } = schema.validate(req.body);
   if (error) {
     return res.status(400).json({
       success: false,
       message: "Validation error",
       details: error.details[0].message,
-    })
+    });
   }
 
-  next()
-}
+  next();
+};
 
 const validatePartnerProfile = (req, res, next) => {
   const schema = Joi.object({
@@ -42,19 +42,19 @@ const validatePartnerProfile = (req, res, next) => {
       pinterest: Joi.string().optional(),
       youtube: Joi.string().optional(),
     }).optional(),
-  })
+  });
 
-  const { error } = schema.validate(req.body)
+  const { error } = schema.validate(req.body);
   if (error) {
     return res.status(400).json({
       success: false,
       message: "Validation error",
       details: error.details[0].message,
-    })
+    });
   }
 
-  next()
-}
+  next();
+};
 
 const validateService = (req, res, next) => {
   const schema = Joi.object({
@@ -62,22 +62,22 @@ const validateService = (req, res, next) => {
     description: Joi.string().max(500).optional(),
     basePrice: Joi.number().min(0).required(),
     priceUnit: Joi.string().valid("per_hour", "per_day", "per_project").required(),
-  })
+  });
 
-  const { error } = schema.validate(req.body)
+  const { error } = schema.validate(req.body);
   if (error) {
     return res.status(400).json({
       success: false,
       message: "Validation error",
       details: error.details[0].message,
-    })
+    });
   }
 
-  next()
-}
+  next();
+};
 
 module.exports = {
   validateUserRegistration,
   validatePartnerProfile,
   validateService,
-}
+};

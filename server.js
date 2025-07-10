@@ -1,44 +1,44 @@
-const express = require("express")
-const helmet = require("helmet")
-const cors = require("cors")
-const compression = require("compression")
-const morgan = require("morgan")
-const rateLimit = require("express-rate-limit")
-const slowDown = require("express-slow-down")
-const mongoSanitize = require("express-mongo-sanitize")
-const hpp = require("hpp")
-const path = require("path")
-require("dotenv").config()
+const express = require("express");
+const helmet = require("helmet");
+const cors = require("cors");
+const compression = require("compression");
+const morgan = require("morgan");
+const rateLimit = require("express-rate-limit");
+const slowDown = require("express-slow-down");
+const mongoSanitize = require("express-mongo-sanitize");
+const hpp = require("hpp");
+const path = require("path");
+require("dotenv").config();
 
 // Initialize Firebase Admin
-const admin = require("firebase-admin")
-const serviceAccount = require("./config/firebase-service-account.json")
+const admin = require("firebase-admin");
+const serviceAccount = require("./config/firebase-service-account.json");
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
   projectId: process.env.FIREBASE_PROJECT_ID,
-})
+});
 
 // Connect to MongoDB
-const connectDB = require("./config/database")
-connectDB()
+const connectDB = require("./config/database");
+connectDB();
 
-const authRoutes = require("./routes/auth")
-const userRoutes = require("./routes/users")
-const partnerRoutes = require("./routes/partners")
-const partnerOnboardingRoutes = require("./routes/partnerOnboarding")
-const adminRoutes = require("./routes/admin")
-const adminSetupRoutes = require("./routes/adminSetup")
-const leadsRoutes = require("./routes/leads")
-const publicRoutes = require("./routes/public") // Add public routes
-const { errorHandler, notFound } = require("./middleware/errorHandler")
-const { securityHeaders } = require("./middleware/security")
-const notificationRoutes = require("./routes/notifications")
+const authRoutes = require("./routes/auth");
+const userRoutes = require("./routes/users");
+const partnerRoutes = require("./routes/partners");
+const partnerOnboardingRoutes = require("./routes/partnerOnboarding");
+const adminRoutes = require("./routes/admin");
+const adminSetupRoutes = require("./routes/adminSetup");
+const leadsRoutes = require("./routes/leads");
+const publicRoutes = require("./routes/public"); // Add public routes
+const { errorHandler, notFound } = require("./middleware/errorHandler");
+const { securityHeaders } = require("./middleware/security");
+const notificationRoutes = require("./routes/notifications");
 
-const app = express()
+const app = express();
 
 // Trust proxy for accurate IP addresses behind reverse proxy
-app.set("trust proxy", 1)
+app.set("trust proxy", 1);
 
 // Security middleware with updated CSP for Firebase
 app.use(
@@ -77,7 +77,7 @@ app.use(
       preload: true,
     },
   }),
-)
+);
 
 // CORS configuration
 app.use(
@@ -86,27 +86,27 @@ app.use(
     credentials: true,
     optionsSuccessStatus: 200,
   }),
-)
+);
 
 // Compression
-app.use(compression())
+app.use(compression());
 
 // Logging
-app.use(morgan("combined"))
+app.use(morgan("combined"));
 
 // Body parsing with size limits
-app.use(express.json({ limit: "10mb" }))
-app.use(express.urlencoded({ extended: true, limit: "10mb" }))
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // Data sanitization
-app.use(mongoSanitize())
-app.use(hpp())
+app.use(mongoSanitize());
+app.use(hpp());
 
 // Custom security headers
-app.use(securityHeaders)
+app.use(securityHeaders);
 
 // Serve static files from public directory
-app.use(express.static(path.join(__dirname, "public")))
+app.use(express.static(path.join(__dirname, "public")));
 
 // Rate limiting with memory store
 const limiter = rateLimit({
@@ -118,7 +118,7 @@ const limiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-})
+});
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -128,7 +128,7 @@ const authLimiter = rateLimit({
     retryAfter: "15 minutes",
   },
   skipSuccessfulRequests: true,
-})
+});
 
 const publicLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -139,32 +139,32 @@ const publicLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
-})
+});
 
 const speedLimiter = slowDown({
   windowMs: 15 * 60 * 1000, // 15 minutes
   delayAfter: 50, // allow 50 requests per 15 minutes at full speed
   delayMs: () => 500, // slow down subsequent requests by 500ms per request (new behavior)
-})
+});
 
-app.use(limiter)
-app.use(speedLimiter)
+app.use(limiter);
+app.use(speedLimiter);
 
 // Routes
-app.use("/api/v1/auth", authLimiter, authRoutes)
-app.use("/api/v1/users", userRoutes)
-app.use("/api/v1/partners", partnerRoutes)
-app.use("/api/v1/partner-onboarding", partnerOnboardingRoutes)
-app.use("/api/v1/admin", adminRoutes)
-app.use("/api/v1/admin-setup", adminSetupRoutes)
-app.use("/api/v1/leads", leadsRoutes)
-app.use("/api/v1/notifications", notificationRoutes)
-app.use("/api/v1/public", publicLimiter, publicRoutes) // Add public routes with higher rate limit
+app.use("/api/v1/auth", authLimiter, authRoutes);
+app.use("/api/v1/users", userRoutes);
+app.use("/api/v1/partners", partnerRoutes);
+app.use("/api/v1/partner-onboarding", partnerOnboardingRoutes);
+app.use("/api/v1/admin", adminRoutes);
+app.use("/api/v1/admin-setup", adminSetupRoutes);
+app.use("/api/v1/leads", leadsRoutes);
+app.use("/api/v1/notifications", notificationRoutes);
+app.use("/api/v1/public", publicLimiter, publicRoutes); // Add public routes with higher rate limit
 
 // Admin setup page route
 app.get("/admin-setup", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "admin-setup.html"))
-})
+  res.sendFile(path.join(__dirname, "public", "admin-setup.html"));
+});
 
 // Health check
 app.get("/health", (req, res) => {
@@ -173,18 +173,18 @@ app.get("/health", (req, res) => {
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     firebase: admin.apps.length > 0 ? "connected" : "disconnected",
-  })
-})
+  });
+});
 
 // Error handling
-app.use(notFound)
-app.use(errorHandler)
+app.use(notFound);
+app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000
+const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`)
-  console.log(`Firebase project: ${process.env.FIREBASE_PROJECT_ID}`)
-})
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Firebase project: ${process.env.FIREBASE_PROJECT_ID}`);
+});
 
-module.exports = app
+module.exports = app;

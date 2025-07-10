@@ -1,26 +1,26 @@
-const Partner = require("../models/Partner")
-const { sendDocumentStatusEmail } = require("./emailService")
+const Partner = require("../models/Partner");
+const { sendDocumentStatusEmail } = require("./emailService");
 
 class NotificationService {
   constructor() {
-    this.subscribers = new Map() // In production, use Redis or WebSocket server
+    this.subscribers = new Map(); // In production, use Redis or WebSocket server
   }
 
   // Subscribe to notifications
   subscribe(userId, callback) {
     if (!this.subscribers.has(userId)) {
-      this.subscribers.set(userId, [])
+      this.subscribers.set(userId, []);
     }
-    this.subscribers.get(userId).push(callback)
+    this.subscribers.get(userId).push(callback);
   }
 
   // Unsubscribe from notifications
   unsubscribe(userId, callback) {
     if (this.subscribers.has(userId)) {
-      const callbacks = this.subscribers.get(userId)
-      const index = callbacks.indexOf(callback)
+      const callbacks = this.subscribers.get(userId);
+      const index = callbacks.indexOf(callback);
       if (index > -1) {
-        callbacks.splice(index, 1)
+        callbacks.splice(index, 1);
       }
     }
   }
@@ -28,14 +28,14 @@ class NotificationService {
   // Send notification to specific user
   notify(userId, notification) {
     if (this.subscribers.has(userId)) {
-      const callbacks = this.subscribers.get(userId)
+      const callbacks = this.subscribers.get(userId);
       callbacks.forEach((callback) => {
         try {
-          callback(notification)
+          callback(notification);
         } catch (error) {
-          console.error("Notification callback error:", error)
+          console.error("Notification callback error:", error);
         }
-      })
+      });
     }
   }
 
@@ -43,22 +43,22 @@ class NotificationService {
   notifyAdmins(notification) {
     // In production, query admin users from database
     // For now, we'll use a simple approach
-    this.subscribers.forEach((callbacks, userId) => {
+    this.subscribers.forEach((callbacks, _userId) => {
       // Check if user is admin (you'd query this from database)
       callbacks.forEach((callback) => {
         try {
-          callback(notification)
+          callback(notification);
         } catch (error) {
-          console.error("Admin notification callback error:", error)
+          console.error("Admin notification callback error:", error);
         }
-      })
-    })
+      });
+    });
   }
 
   // Partner submitted for verification
   async partnerSubmittedForVerification(partnerId) {
     try {
-      const partner = await Partner.findById(partnerId).populate("userId", "username email")
+      const partner = await Partner.findById(partnerId).populate("userId", "username email");
 
       const notification = {
         type: "partner_verification_pending",
@@ -71,21 +71,21 @@ class NotificationService {
           submittedAt: new Date(),
         },
         priority: "high",
-      }
+      };
 
-      this.notifyAdmins(notification)
+      this.notifyAdmins(notification);
     } catch (error) {
-      console.error("Partner verification notification error:", error)
+      console.error("Partner verification notification error:", error);
     }
   }
 
   // Document status updated
   async documentStatusUpdated(partnerId, documentId, status, reviewData = {}) {
     try {
-      const partner = await Partner.findById(partnerId).populate("userId", "username email")
-      const document = partner.documents.id(documentId)
+      const partner = await Partner.findById(partnerId).populate("userId", "username email");
+      const document = partner.documents.id(documentId);
 
-      if (!document) return
+      if (!document) return;
 
       // Notify partner
       const partnerNotification = {
@@ -99,9 +99,9 @@ class NotificationService {
           ...reviewData,
         },
         priority: status === "rejected" ? "high" : "medium",
-      }
+      };
 
-      this.notify(partner.userId._id.toString(), partnerNotification)
+      this.notify(partner.userId._id.toString(), partnerNotification);
 
       // Send email notification
       await sendDocumentStatusEmail(partner.userId.email, partner.userId.username, {
@@ -109,16 +109,16 @@ class NotificationService {
         status: status,
         reason: reviewData.reason,
         notes: reviewData.notes,
-      })
+      });
     } catch (error) {
-      console.error("Document status notification error:", error)
+      console.error("Document status notification error:", error);
     }
   }
 
   // Partner verification status updated
   async partnerVerificationStatusUpdated(partnerId, status, data = {}) {
     try {
-      const partner = await Partner.findById(partnerId).populate("userId", "username email")
+      const partner = await Partner.findById(partnerId).populate("userId", "username email");
 
       const notification = {
         type: "partner_verification_status",
@@ -133,9 +133,9 @@ class NotificationService {
           ...data,
         },
         priority: "high",
-      }
+      };
 
-      this.notify(partner.userId._id.toString(), notification)
+      this.notify(partner.userId._id.toString(), notification);
 
       // Notify admins about verification completion
       if (status === "verified") {
@@ -150,17 +150,17 @@ class NotificationService {
             verifiedAt: new Date(),
           },
           priority: "low",
-        }
+        };
 
-        this.notifyAdmins(adminNotification)
+        this.notifyAdmins(adminNotification);
       }
     } catch (error) {
-      console.error("Partner verification status notification error:", error)
+      console.error("Partner verification status notification error:", error);
     }
   }
 }
 
 // Create singleton instance
-const notificationService = new NotificationService()
+const notificationService = new NotificationService();
 
-module.exports = notificationService
+module.exports = notificationService;

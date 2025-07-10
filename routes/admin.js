@@ -1,17 +1,17 @@
-const express = require("express")
-const Partner = require("../models/Partner")
-const User = require("../models/User")
-const Lead = require("../models/Lead")
-const { verifyFirebaseToken, authorize, requireEmailVerification } = require("../middleware/firebaseAuth")
-const { sanitizeInput } = require("../middleware/security")
-const { sendPartnerVerificationEmail, sendPartnerRejectionEmail } = require("../utils/emailService")
+const express = require("express");
+const Partner = require("../models/Partner");
+const User = require("../models/User");
+const Lead = require("../models/Lead");
+const { verifyFirebaseToken, authorize } = require("../middleware/firebaseAuth");
+const { sanitizeInput } = require("../middleware/security");
+const { sendPartnerVerificationEmail, sendPartnerRejectionEmail } = require("../utils/emailService");
 
-const router = express.Router()
+const router = express.Router();
 
 // Apply middleware
-router.use(sanitizeInput)
-router.use(verifyFirebaseToken)
-router.use(authorize("admin"))
+router.use(sanitizeInput);
+router.use(verifyFirebaseToken);
+router.use(authorize("admin"));
 
 // Get dashboard statistics
 router.get("/dashboard/stats", async (req, res) => {
@@ -26,7 +26,7 @@ router.get("/dashboard/stats", async (req, res) => {
       Lead.countDocuments({ deletedAt: null }),
       Lead.countDocuments({ status: "new", deletedAt: null }),
       Lead.countDocuments({ status: "converted", deletedAt: null }),
-    ])
+    ]);
 
     res.json({
       success: true,
@@ -41,34 +41,34 @@ router.get("/dashboard/stats", async (req, res) => {
         newLeads: stats[7],
         convertedLeads: stats[8],
       },
-    })
+    });
   } catch (error) {
-    console.error("Get admin stats error:", error)
+    console.error("Get admin stats error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch dashboard statistics",
-    })
+    });
   }
-})
+});
 
 // Get comprehensive lead statistics for admin
 router.get("/leads/stats", async (req, res) => {
   try {
-    const { startDate, endDate, period = "30" } = req.query
+    const { startDate, endDate, period = "30" } = req.query;
 
-    let dateRange = {}
+    let dateRange = {};
     if (startDate && endDate) {
-      dateRange = { startDate, endDate }
+      dateRange = { startDate, endDate };
     } else {
       // Default to last 30 days or specified period
-      const days = Number.parseInt(period) || 30
+      const days = Number.parseInt(period) || 30;
       dateRange = {
         startDate: new Date(Date.now() - days * 24 * 60 * 60 * 1000),
         endDate: new Date(),
-      }
+      };
     }
 
-    const stats = await Lead.getAdminStats(dateRange)
+    const stats = await Lead.getAdminStats(dateRange);
 
     // Get conversion funnel
     const funnelStats = await Lead.aggregate([
@@ -98,7 +98,7 @@ router.get("/leads/stats", async (req, res) => {
           },
         },
       },
-    ])
+    ]);
 
     // Get source breakdown
     const sourceStats = await Lead.aggregate([
@@ -129,7 +129,7 @@ router.get("/leads/stats", async (req, res) => {
           },
         },
       },
-    ])
+    ]);
 
     // Get average response times by partner
     const responseTimeStats = await Lead.aggregate([
@@ -159,7 +159,7 @@ router.get("/leads/stats", async (req, res) => {
           medianResponseTime: { $median: "$responseTimeHours" },
         },
       },
-    ])
+    ]);
 
     res.json({
       success: true,
@@ -178,15 +178,15 @@ router.get("/leads/stats", async (req, res) => {
         },
         dateRange,
       },
-    })
+    });
   } catch (error) {
-    console.error("Get admin lead stats error:", error)
+    console.error("Get admin lead stats error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch lead statistics",
-    })
+    });
   }
-})
+});
 
 // Get all leads for admin with advanced filtering
 router.get("/leads", async (req, res) => {
@@ -204,28 +204,28 @@ router.get("/leads", async (req, res) => {
       sortBy = "createdAt",
       sortOrder = "desc",
       search,
-    } = req.query
+    } = req.query;
 
-    const query = { deletedAt: null }
+    const query = { deletedAt: null };
 
     // Add filters
-    if (status) query.status = status
-    if (source) query.source = source
-    if (priority) query.priority = priority
-    if (partnerId) query.partnerId = partnerId
-    if (clientId) query.clientId = clientId
+    if (status) query.status = status;
+    if (source) query.source = source;
+    if (priority) query.priority = priority;
+    if (partnerId) query.partnerId = partnerId;
+    if (clientId) query.clientId = clientId;
 
     // Date range filter
     if (startDate && endDate) {
       query.createdAt = {
         $gte: new Date(startDate),
         $lte: new Date(endDate),
-      }
+      };
     }
 
     // Build sort object
-    const sort = {}
-    sort[sortBy] = sortOrder === "desc" ? -1 : 1
+    const sort = {};
+    sort[sortBy] = sortOrder === "desc" ? -1 : 1;
 
     // Build aggregation pipeline for search
     const pipeline = [
@@ -251,7 +251,7 @@ router.get("/leads", async (req, res) => {
       {
         $unwind: "$partner",
       },
-    ]
+    ];
 
     // Add search filter
     if (search) {
@@ -267,19 +267,19 @@ router.get("/leads", async (req, res) => {
             { location: { $regex: search, $options: "i" } },
           ],
         },
-      })
+      });
     }
 
     // Add other filters
     if (Object.keys(query).length > 0) {
-      pipeline.push({ $match: query })
+      pipeline.push({ $match: query });
     }
 
     // Add sorting
-    pipeline.push({ $sort: sort })
+    pipeline.push({ $sort: sort });
 
     // Add pagination
-    pipeline.push({ $skip: (page - 1) * limit }, { $limit: limit * 1 })
+    pipeline.push({ $skip: (page - 1) * limit }, { $limit: limit * 1 });
 
     // Add client and partner profile lookup
     pipeline.push(
@@ -296,14 +296,14 @@ router.get("/leads", async (req, res) => {
           partnerProfile: { $arrayElemAt: ["$partnerProfile", 0] },
         },
       },
-    )
+    );
 
-    const leads = await Lead.aggregate(pipeline)
+    const leads = await Lead.aggregate(pipeline);
 
     // Get total count for pagination
-    const totalPipeline = [...pipeline.slice(0, -2), { $count: "total" }]
-    const totalResult = await Lead.aggregate(totalPipeline)
-    const total = totalResult[0]?.total || 0
+    const totalPipeline = [...pipeline.slice(0, -2), { $count: "total" }];
+    const totalResult = await Lead.aggregate(totalPipeline);
+    const total = totalResult[0]?.total || 0;
 
     res.json({
       success: true,
@@ -316,31 +316,31 @@ router.get("/leads", async (req, res) => {
           pages: Math.ceil(total / limit),
         },
       },
-    })
+    });
   } catch (error) {
-    console.error("Get admin leads error:", error)
+    console.error("Get admin leads error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch leads",
-    })
+    });
   }
-})
+});
 
 // Get all partners pending verification
 router.get("/partners/pending", async (req, res) => {
   try {
-    const { page = 1, limit = 10, sortBy = "createdAt", sortOrder = "desc" } = req.query
+    const { page = 1, limit = 10, sortBy = "createdAt", sortOrder = "desc" } = req.query;
 
-    const sort = {}
-    sort[sortBy] = sortOrder === "desc" ? -1 : 1
+    const sort = {};
+    sort[sortBy] = sortOrder === "desc" ? -1 : 1;
 
     const partners = await Partner.find({ onboardingStatus: "pending_verification" })
       .populate("userId", "username email phone createdAt")
       .sort(sort)
       .limit(limit * 1)
-      .skip((page - 1) * limit)
+      .skip((page - 1) * limit);
 
-    const total = await Partner.countDocuments({ onboardingStatus: "pending_verification" })
+    const total = await Partner.countDocuments({ onboardingStatus: "pending_verification" });
 
     res.json({
       success: true,
@@ -353,35 +353,35 @@ router.get("/partners/pending", async (req, res) => {
           pages: Math.ceil(total / limit),
         },
       },
-    })
+    });
   } catch (error) {
-    console.error("Get pending partners error:", error)
+    console.error("Get pending partners error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch pending partners",
-    })
+    });
   }
-})
+});
 
 // Get all partners (with filters)
 router.get("/partners", async (req, res) => {
   try {
-    const { page = 1, limit = 10, status, verified, sortBy = "createdAt", sortOrder = "desc", search } = req.query
+    const { page = 1, limit = 10, status, verified, sortBy = "createdAt", sortOrder = "desc", search } = req.query;
 
-    const query = {}
+    const query = {};
 
     // Add filters
     if (status) {
-      query.onboardingStatus = status
+      query.onboardingStatus = status;
     }
 
     if (verified !== undefined) {
-      query.verified = verified === "true"
+      query.verified = verified === "true";
     }
 
     // Build sort object
-    const sort = {}
-    sort[sortBy] = sortOrder === "desc" ? -1 : 1
+    const sort = {};
+    sort[sortBy] = sortOrder === "desc" ? -1 : 1;
 
     // Build aggregation pipeline for search
     const pipeline = [
@@ -396,7 +396,7 @@ router.get("/partners", async (req, res) => {
       {
         $unwind: "$user",
       },
-    ]
+    ];
 
     // Add search filter
     if (search) {
@@ -408,24 +408,24 @@ router.get("/partners", async (req, res) => {
             { companyName: { $regex: search, $options: "i" } },
           ],
         },
-      })
+      });
     }
 
     // Add status filters
     if (Object.keys(query).length > 0) {
-      pipeline.push({ $match: query })
+      pipeline.push({ $match: query });
     }
 
     // Add sorting
-    pipeline.push({ $sort: sort })
+    pipeline.push({ $sort: sort });
 
     // Add pagination
-    pipeline.push({ $skip: (page - 1) * limit }, { $limit: limit * 1 })
+    pipeline.push({ $skip: (page - 1) * limit }, { $limit: limit * 1 });
 
-    const partners = await Partner.aggregate(pipeline)
-    const totalPipeline = [...pipeline.slice(0, -2), { $count: "total" }]
-    const totalResult = await Partner.aggregate(totalPipeline)
-    const total = totalResult[0]?.total || 0
+    const partners = await Partner.aggregate(pipeline);
+    const totalPipeline = [...pipeline.slice(0, -2), { $count: "total" }];
+    const totalResult = await Partner.aggregate(totalPipeline);
+    const total = totalResult[0]?.total || 0;
 
     res.json({
       success: true,
@@ -438,15 +438,15 @@ router.get("/partners", async (req, res) => {
           pages: Math.ceil(total / limit),
         },
       },
-    })
+    });
   } catch (error) {
-    console.error("Get partners error:", error)
+    console.error("Get partners error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch partners",
-    })
+    });
   }
-})
+});
 
 // Get single partner details for verification
 router.get("/partners/:partnerId", async (req, res) => {
@@ -454,127 +454,127 @@ router.get("/partners/:partnerId", async (req, res) => {
     const partner = await Partner.findById(req.params.partnerId).populate(
       "userId",
       "username email phone profilePic address createdAt emailVerified phoneVerified",
-    )
+    );
 
     if (!partner) {
       return res.status(404).json({
         success: false,
         message: "Partner not found",
-      })
+      });
     }
 
     res.json({
       success: true,
       data: { partner },
-    })
+    });
   } catch (error) {
-    console.error("Get partner details error:", error)
+    console.error("Get partner details error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch partner details",
-    })
+    });
   }
-})
+});
 
 // Verify/Approve partner
 router.patch("/partners/:partnerId/verify", async (req, res) => {
   try {
-    const { notes } = req.body
+    const { notes } = req.body;
 
-    const partner = await Partner.findById(req.params.partnerId).populate("userId", "username email")
+    const partner = await Partner.findById(req.params.partnerId).populate("userId", "username email");
 
     if (!partner) {
       return res.status(404).json({
         success: false,
         message: "Partner not found",
-      })
+      });
     }
 
     if (partner.onboardingStatus !== "pending_verification") {
       return res.status(400).json({
         success: false,
         message: "Partner is not pending verification",
-      })
+      });
     }
 
     // Check if all documents are approved
-    const hasRejectedDocs = partner.documents.some((doc) => doc.status === "rejected")
-    const hasPendingDocs = partner.documents.some((doc) => doc.status === "pending")
+    const hasRejectedDocs = partner.documents.some((doc) => doc.status === "rejected");
+    const hasPendingDocs = partner.documents.some((doc) => doc.status === "pending");
 
     if (hasRejectedDocs || hasPendingDocs) {
       return res.status(400).json({
         success: false,
         message: "All documents must be approved before verifying partner",
-      })
+      });
     }
 
     // Update partner status
-    partner.onboardingStatus = "verified"
-    partner.verified = true
-    partner.verificationDate = new Date()
-    partner.verificationNotes = notes
-    partner.verifiedBy = req.user.id
+    partner.onboardingStatus = "verified";
+    partner.verified = true;
+    partner.verificationDate = new Date();
+    partner.verificationNotes = notes;
+    partner.verifiedBy = req.user.id;
 
-    await partner.save()
+    await partner.save();
 
     // Send verification email
     await sendPartnerVerificationEmail(partner.userId.email, partner.userId.username, {
       companyName: partner.companyName,
       verificationDate: partner.verificationDate,
       notes: notes,
-    })
+    });
 
     res.json({
       success: true,
       message: "Partner verified successfully",
       data: { partner },
-    })
+    });
   } catch (error) {
-    console.error("Verify partner error:", error)
+    console.error("Verify partner error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to verify partner",
-    })
+    });
   }
-})
+});
 
 // Reject partner
 router.patch("/partners/:partnerId/reject", async (req, res) => {
   try {
-    const { reason, notes } = req.body
+    const { reason, notes } = req.body;
 
     if (!reason) {
       return res.status(400).json({
         success: false,
         message: "Rejection reason is required",
-      })
+      });
     }
 
-    const partner = await Partner.findById(req.params.partnerId).populate("userId", "username email")
+    const partner = await Partner.findById(req.params.partnerId).populate("userId", "username email");
 
     if (!partner) {
       return res.status(404).json({
         success: false,
         message: "Partner not found",
-      })
+      });
     }
 
     if (partner.onboardingStatus !== "pending_verification") {
       return res.status(400).json({
         success: false,
         message: "Partner is not pending verification",
-      })
+      });
     }
 
     // Update partner status
-    partner.onboardingStatus = "rejected"
-    partner.verified = false
-    partner.rejectionReason = reason
-    partner.rejectionNotes = notes
-    partner.rejectionDate = new Date()
-    partner.rejectedBy = req.user.id
+    partner.onboardingStatus = "rejected";
+    partner.verified = false;
+    partner.rejectionReason = reason;
+    partner.rejectionNotes = notes;
+    partner.rejectionDate = new Date();
+    partner.rejectedBy = req.user.id;
 
-    await partner.save()
+    await partner.save();
 
     // Send rejection email
     await sendPartnerRejectionEmail(partner.userId.email, partner.userId.username, {
@@ -582,54 +582,54 @@ router.patch("/partners/:partnerId/reject", async (req, res) => {
       reason: reason,
       notes: notes,
       rejectionDate: partner.rejectionDate,
-    })
+    });
 
     res.json({
       success: true,
       message: "Partner rejected successfully",
       data: { partner },
-    })
+    });
   } catch (error) {
-    console.error("Reject partner error:", error)
+    console.error("Reject partner error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to reject partner",
-    })
+    });
   }
-})
+});
 
 // Approve document
 router.patch("/partners/:partnerId/documents/:documentId/approve", async (req, res) => {
   try {
-    const { notes } = req.body
+    const { notes } = req.body;
 
-    const partner = await Partner.findById(req.params.partnerId)
+    const partner = await Partner.findById(req.params.partnerId);
 
     if (!partner) {
       return res.status(404).json({
         success: false,
         message: "Partner not found",
-      })
+      });
     }
 
-    const document = partner.documents.id(req.params.documentId)
+    const document = partner.documents.id(req.params.documentId);
 
     if (!document) {
       return res.status(404).json({
         success: false,
         message: "Document not found",
-      })
+      });
     }
 
-    document.status = "approved"
-    document.reviewedAt = new Date()
-    document.reviewedBy = req.user.id
-    document.reviewNotes = notes
+    document.status = "approved";
+    document.reviewedAt = new Date();
+    document.reviewedBy = req.user.id;
+    document.reviewNotes = notes;
 
-    await partner.save()
+    await partner.save();
 
     // Check if all documents are now approved
-    const allApproved = partner.documents.every((doc) => doc.status === "approved")
+    const allApproved = partner.documents.every((doc) => doc.status === "approved");
 
     res.json({
       success: true,
@@ -638,67 +638,67 @@ router.patch("/partners/:partnerId/documents/:documentId/approve", async (req, r
         document,
         allDocumentsApproved: allApproved,
       },
-    })
+    });
   } catch (error) {
-    console.error("Approve document error:", error)
+    console.error("Approve document error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to approve document",
-    })
+    });
   }
-})
+});
 
 // Reject document
 router.patch("/partners/:partnerId/documents/:documentId/reject", async (req, res) => {
   try {
-    const { reason, notes } = req.body
+    const { reason, notes } = req.body;
 
     if (!reason) {
       return res.status(400).json({
         success: false,
         message: "Rejection reason is required",
-      })
+      });
     }
 
-    const partner = await Partner.findById(req.params.partnerId)
+    const partner = await Partner.findById(req.params.partnerId);
 
     if (!partner) {
       return res.status(404).json({
         success: false,
         message: "Partner not found",
-      })
+      });
     }
 
-    const document = partner.documents.id(req.params.documentId)
+    const document = partner.documents.id(req.params.documentId);
 
     if (!document) {
       return res.status(404).json({
         success: false,
         message: "Document not found",
-      })
+      });
     }
 
-    document.status = "rejected"
-    document.rejectionReason = reason
-    document.reviewedAt = new Date()
-    document.reviewedBy = req.user.id
-    document.reviewNotes = notes
+    document.status = "rejected";
+    document.rejectionReason = reason;
+    document.reviewedAt = new Date();
+    document.reviewedBy = req.user.id;
+    document.reviewNotes = notes;
 
-    await partner.save()
+    await partner.save();
 
     res.json({
       success: true,
       message: "Document rejected successfully",
       data: { document },
-    })
+    });
   } catch (error) {
-    console.error("Reject document error:", error)
+    console.error("Reject document error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to reject document",
-    })
+    });
   }
-})
+});
 
 // Get verification history
 router.get("/partners/:partnerId/history", async (req, res) => {
@@ -706,16 +706,16 @@ router.get("/partners/:partnerId/history", async (req, res) => {
     const partner = await Partner.findById(req.params.partnerId)
       .populate("verifiedBy", "username email")
       .populate("rejectedBy", "username email")
-      .populate("documents.reviewedBy", "username email")
+      .populate("documents.reviewedBy", "username email");
 
     if (!partner) {
       return res.status(404).json({
         success: false,
         message: "Partner not found",
-      })
+      });
     }
 
-    const history = []
+    const history = [];
 
     // Add verification/rejection events
     if (partner.verificationDate) {
@@ -725,7 +725,7 @@ router.get("/partners/:partnerId/history", async (req, res) => {
         date: partner.verificationDate,
         by: partner.verifiedBy,
         notes: partner.verificationNotes,
-      })
+      });
     }
 
     if (partner.rejectionDate) {
@@ -736,7 +736,7 @@ router.get("/partners/:partnerId/history", async (req, res) => {
         by: partner.rejectedBy,
         reason: partner.rejectionReason,
         notes: partner.rejectionNotes,
-      })
+      });
     }
 
     // Add document review events
@@ -750,101 +750,101 @@ router.get("/partners/:partnerId/history", async (req, res) => {
           documentName: doc.docName,
           reason: doc.rejectionReason,
           notes: doc.reviewNotes,
-        })
+        });
       }
-    })
+    });
 
     // Sort by date (newest first)
-    history.sort((a, b) => new Date(b.date) - new Date(a.date))
+    history.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     res.json({
       success: true,
       data: { history },
-    })
+    });
   } catch (error) {
-    console.error("Get verification history error:", error)
+    console.error("Get verification history error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch verification history",
-    })
+    });
   }
-})
+});
 
 // Bulk actions
 
 router.patch("/partners/bulk-action", async (req, res) => {
   try {
-    const { action, partnerIds, reason, notes } = req.body
+    const { action, partnerIds, reason, notes } = req.body;
 
     if (!action || !partnerIds || !Array.isArray(partnerIds)) {
       return res.status(400).json({
         success: false,
         message: "Action and partner IDs are required",
-      })
+      });
     }
 
     if (action === "reject" && !reason) {
       return res.status(400).json({
         success: false,
         message: "Rejection reason is required for bulk rejection",
-      })
+      });
     }
 
     const partners = await Partner.find({
       _id: { $in: partnerIds },
       onboardingStatus: "pending_verification",
-    }).populate("userId", "username email")
+    }).populate("userId", "username email");
 
     if (partners.length === 0) {
       return res.status(404).json({
         success: false,
         message: "No eligible partners found",
-      })
+      });
     }
 
-    const results = []
+    const results = [];
 
     for (const partner of partners) {
       try {
         if (action === "verify") {
           // Check if all documents are approved
-          const hasRejectedDocs = partner.documents.some((doc) => doc.status === "rejected")
-          const hasPendingDocs = partner.documents.some((doc) => doc.status === "pending")
+          const hasRejectedDocs = partner.documents.some((doc) => doc.status === "rejected");
+          const hasPendingDocs = partner.documents.some((doc) => doc.status === "pending");
 
           if (!hasRejectedDocs && !hasPendingDocs) {
-            partner.onboardingStatus = "verified"
-            partner.verified = true
-            partner.verificationDate = new Date()
-            partner.verificationNotes = notes
-            partner.verifiedBy = req.user.id
+            partner.onboardingStatus = "verified";
+            partner.verified = true;
+            partner.verificationDate = new Date();
+            partner.verificationNotes = notes;
+            partner.verifiedBy = req.user.id;
 
-            await partner.save()
+            await partner.save();
 
             // Send verification email
             await sendPartnerVerificationEmail(partner.userId.email, partner.userId.username, {
               companyName: partner.companyName,
               verificationDate: partner.verificationDate,
               notes: notes,
-            })
+            });
 
-            results.push({ partnerId: partner._id, status: "verified", success: true })
+            results.push({ partnerId: partner._id, status: "verified", success: true });
           } else {
             results.push({
               partnerId: partner._id,
               status: "skipped",
               success: false,
               reason: "Documents not approved",
-            })
+            });
           }
         } else if (action === "reject") {
-          partner.onboardingStatus = "rejected"
-          partner.verified = false
-          partner.rejectionReason = reason
-          partner.rejectionNotes = notes
-          partner.rejectionDate = new Date()
-          partner.rejectedBy = req.user.id
+          partner.onboardingStatus = "rejected";
+          partner.verified = false;
+          partner.rejectionReason = reason;
+          partner.rejectionNotes = notes;
+          partner.rejectionDate = new Date();
+          partner.rejectedBy = req.user.id;
 
-          await partner.save()
+          await partner.save();
 
           // Send rejection email
           await sendPartnerRejectionEmail(partner.userId.email, partner.userId.username, {
@@ -852,9 +852,9 @@ router.patch("/partners/bulk-action", async (req, res) => {
             reason: reason,
             notes: notes,
             rejectionDate: partner.rejectionDate,
-          })
+          });
 
-          results.push({ partnerId: partner._id, status: "rejected", success: true })
+          results.push({ partnerId: partner._id, status: "rejected", success: true });
         }
       } catch (error) {
         results.push({
@@ -862,7 +862,7 @@ router.patch("/partners/bulk-action", async (req, res) => {
           status: "error",
           success: false,
           error: error.message,
-        })
+        });
       }
     }
 
@@ -870,14 +870,14 @@ router.patch("/partners/bulk-action", async (req, res) => {
       success: true,
       message: `Bulk ${action} completed`,
       data: { results },
-    })
+    });
   } catch (error) {
-    console.error("Bulk action error:", error)
+    console.error("Bulk action error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to perform bulk action",
-    })
+    });
   }
-})
+});
 
-module.exports = router
+module.exports = router;

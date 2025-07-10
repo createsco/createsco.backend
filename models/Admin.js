@@ -1,4 +1,4 @@
-const mongoose = require("mongoose")
+const mongoose = require("mongoose");
 
 const adminSchema = new mongoose.Schema(
   {
@@ -37,26 +37,26 @@ const adminSchema = new mongoose.Schema(
   {
     timestamps: true,
   },
-)
+);
 
 // Indexes
-adminSchema.index({ userId: 1 })
-adminSchema.index({ role: 1 })
-adminSchema.index({ isActive: 1 })
+adminSchema.index({ userId: 1 });
+adminSchema.index({ role: 1 });
+adminSchema.index({ isActive: 1 });
 
 // Instance methods
 adminSchema.methods.hasPermission = function (permission) {
-  return this.permissions[permission] === true
-}
+  return this.permissions[permission] === true;
+};
 
 adminSchema.methods.updateLastActive = function () {
-  this.lastActiveAt = new Date()
-  return this.save()
-}
+  this.lastActiveAt = new Date();
+  return this.save();
+};
 
 // Static methods
 adminSchema.statics.findActive = function () {
-  return this.find({ isActive: true })
-}
+  return this.find({ isActive: true });
+};
 
-module.exports = mongoose.model("Admin", adminSchema)
+module.exports = mongoose.model("Admin", adminSchema);

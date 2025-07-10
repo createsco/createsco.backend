@@ -1,4 +1,4 @@
-const Joi = require("joi")
+const Joi = require("joi");
 
 const validatePartnerBasicInfo = (req, res, next) => {
   const schema = Joi.object({
@@ -32,19 +32,19 @@ const validatePartnerBasicInfo = (req, res, next) => {
       pinterest: Joi.string().optional().allow(""),
       youtube: Joi.string().optional().allow(""),
     }).optional(),
-  })
+  });
 
-  const { error } = schema.validate(req.body)
+  const { error } = schema.validate(req.body);
   if (error) {
     return res.status(400).json({
       success: false,
       message: "Validation error",
       details: error.details[0].message,
-    })
+    });
   }
 
-  next()
-}
+  next();
+};
 
 const validatePartnerService = (req, res, next) => {
   const schema = Joi.object({
@@ -53,19 +53,19 @@ const validatePartnerService = (req, res, next) => {
     basePrice: Joi.number().min(0).required(),
     priceUnit: Joi.string().valid("per_hour", "per_day", "per_project").required(),
     isActive: Joi.boolean().optional(),
-  })
+  });
 
-  const { error } = schema.validate(req.body)
+  const { error } = schema.validate(req.body);
   if (error) {
     return res.status(400).json({
       success: false,
       message: "Validation error",
       details: error.details[0].message,
-    })
+    });
   }
 
-  next()
-}
+  next();
+};
 
 const validatePartnerLocation = (req, res, next) => {
   const schema = Joi.object({
@@ -85,19 +85,19 @@ const validatePartnerLocation = (req, res, next) => {
       .required(),
     servingLocations: Joi.array().items(Joi.string()).min(1).required(),
     locationPricing: Joi.object().pattern(Joi.string(), Joi.number().min(0)).optional(),
-  })
+  });
 
-  const { error } = schema.validate(req.body)
+  const { error } = schema.validate(req.body);
   if (error) {
     return res.status(400).json({
       success: false,
       message: "Validation error",
       details: error.details[0].message,
-    })
+    });
   }
 
-  next()
-}
+  next();
+};
 
 const validatePartnerDocuments = (req, res, next) => {
   if (req.files && req.files.length > 1 && req.body.docNames) {
@@ -105,26 +105,26 @@ const validatePartnerDocuments = (req, res, next) => {
       return res.status(400).json({
         success: false,
         message: "Document names must be provided for each uploaded file",
-      })
+      });
     }
   }
 
-  const allowedTypes = ["image/jpeg", "image/png", "image/webp", "application/pdf"]
+  const allowedTypes = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
   for (const file of req.files || []) {
     if (!allowedTypes.includes(file.mimetype)) {
       return res.status(400).json({
         success: false,
         message: "Only JPEG, PNG, WebP images and PDF files are allowed for documents",
-      })
+      });
     }
   }
 
-  next()
-}
+  next();
+};
 
 module.exports = {
   validatePartnerBasicInfo,
   validatePartnerService,
   validatePartnerLocation,
   validatePartnerDocuments,
-}
+};

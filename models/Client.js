@@ -1,4 +1,4 @@
-const mongoose = require("mongoose")
+const mongoose = require("mongoose");
 
 const clientSchema = new mongoose.Schema(
   {
@@ -18,9 +18,9 @@ const clientSchema = new mongoose.Schema(
   {
     timestamps: true,
   },
-)
+);
 
 // Indexes
-clientSchema.index({ userId: 1 })
+clientSchema.index({ userId: 1 });
 
-module.exports = mongoose.model("Client", clientSchema)
+module.exports = mongoose.model("Client", clientSchema);

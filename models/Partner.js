@@ -1,4 +1,4 @@
-const mongoose = require("mongoose")
+const mongoose = require("mongoose");
 
 const partnerSchema = new mongoose.Schema(
   {
@@ -177,103 +177,103 @@ const partnerSchema = new mongoose.Schema(
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
   },
-)
+);
 
 // Add virtual for onboarding progress
 partnerSchema.virtual("onboardingProgress").get(function () {
-  let progress = 0
+  let progress = 0;
 
   // Basic info (20%)
   if (this.companyName && this.partnerType && this.experienceYears >= 0) {
-    progress += 20
+    progress += 20;
   }
 
   // Specializations (15%)
   if (this.specializations && this.specializations.length > 0) {
-    progress += 15
+    progress += 15;
   }
 
   // Services (25%)
   if (this.services && this.services.length > 0) {
-    progress += 25
+    progress += 25;
   }
 
   // Locations (20%)
   if (this.partnerLocations && this.partnerLocations.length > 0) {
-    progress += 20
+    progress += 20;
   }
 
   // Documents (20%)
   if (this.documents && this.documents.length > 0) {
-    progress += 20
+    progress += 20;
   }
 
-  return Math.min(progress, 100)
-})
+  return Math.min(progress, 100);
+});
 
 // Add onboarding status update method
 partnerSchema.methods.updateOnboardingStatus = async function () {
-  const progress = this.onboardingProgress
+  const progress = this.onboardingProgress;
 
   if (progress < 100) {
-    this.onboardingStatus = "incomplete"
+    this.onboardingStatus = "incomplete";
   } else if (this.documents.length === 0) {
-    this.onboardingStatus = "incomplete"
+    this.onboardingStatus = "incomplete";
   } else if (this.documents.some((doc) => doc.status === "pending")) {
-    this.onboardingStatus = "pending_verification"
+    this.onboardingStatus = "pending_verification";
   } else if (this.documents.every((doc) => doc.status === "approved")) {
-    this.onboardingStatus = "verified"
-    this.verified = true
+    this.onboardingStatus = "verified";
+    this.verified = true;
   } else if (this.documents.some((doc) => doc.status === "rejected")) {
-    this.onboardingStatus = "rejected"
+    this.onboardingStatus = "rejected";
   }
 
-  return this.save()
-}
+  return this.save();
+};
 
 // Indexes
-partnerSchema.index({ userId: 1 })
-partnerSchema.index({ verified: 1 })
-partnerSchema.index({ avgRating: -1 })
-partnerSchema.index({ servingLocations: 1 })
-partnerSchema.index({ specializations: 1 })
-partnerSchema.index({ deletedAt: 1 })
+partnerSchema.index({ userId: 1 });
+partnerSchema.index({ verified: 1 });
+partnerSchema.index({ avgRating: -1 });
+partnerSchema.index({ servingLocations: 1 });
+partnerSchema.index({ specializations: 1 });
+partnerSchema.index({ deletedAt: 1 });
 
 // Virtual for completion rate
 partnerSchema.virtual("completionRate").get(function () {
-  if (this.projectStats.total === 0) return 0
-  return (this.projectStats.completed / this.projectStats.total) * 100
-})
+  if (this.projectStats.total === 0) return 0;
+  return (this.projectStats.completed / this.projectStats.total) * 100;
+});
 
 // Instance methods
 partnerSchema.methods.updateRating = async function (newRating) {
-  const totalRating = this.avgRating * this.totalReviews + newRating
-  this.totalReviews += 1
-  this.avgRating = totalRating / this.totalReviews
-  return this.save()
-}
+  const totalRating = this.avgRating * this.totalReviews + newRating;
+  this.totalReviews += 1;
+  this.avgRating = totalRating / this.totalReviews;
+  return this.save();
+};
 
 partnerSchema.methods.addService = function (service) {
-  this.services.push(service)
-  return this.save()
-}
+  this.services.push(service);
+  return this.save();
+};
 
 partnerSchema.methods.removeService = function (serviceId) {
-  this.services = this.services.filter((service) => service.serviceId.toString() !== serviceId.toString())
-  return this.save()
-}
+  this.services = this.services.filter((service) => service.serviceId.toString() !== serviceId.toString());
+  return this.save();
+};
 
 // Static methods
 partnerSchema.statics.findVerified = function () {
-  return this.find({ verified: true, deletedAt: null })
-}
+  return this.find({ verified: true, deletedAt: null });
+};
 
 partnerSchema.statics.findByLocation = function (location) {
   return this.find({
     servingLocations: { $in: [location] },
     verified: true,
     deletedAt: null,
-  })
-}
+  });
+};
 
-module.exports = mongoose.model("Partner", partnerSchema)
+module.exports = mongoose.model("Partner", partnerSchema);

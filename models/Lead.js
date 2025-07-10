@@ -1,4 +1,4 @@
-const mongoose = require("mongoose")
+const mongoose = require("mongoose");
 
 const leadSchema = new mongoose.Schema(
   {
@@ -94,46 +94,46 @@ const leadSchema = new mongoose.Schema(
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
   },
-)
+);
 
 // Indexes for better performance
-leadSchema.index({ clientId: 1, partnerId: 1 })
-leadSchema.index({ status: 1, createdAt: -1 })
-leadSchema.index({ partnerId: 1, status: 1 })
-leadSchema.index({ createdAt: -1 })
-leadSchema.index({ deletedAt: 1 })
+leadSchema.index({ clientId: 1, partnerId: 1 });
+leadSchema.index({ status: 1, createdAt: -1 });
+leadSchema.index({ partnerId: 1, status: 1 });
+leadSchema.index({ createdAt: -1 });
+leadSchema.index({ deletedAt: 1 });
 
 // Virtual for response time (how long it took to contact)
 leadSchema.virtual("responseTime").get(function () {
   if (this.contactedAt && this.createdAt) {
-    return Math.floor((this.contactedAt - this.createdAt) / (1000 * 60 * 60)) // hours
+    return Math.floor((this.contactedAt - this.createdAt) / (1000 * 60 * 60)); // hours
   }
-  return null
-})
+  return null;
+});
 
 // Virtual for conversion time
 leadSchema.virtual("conversionTime").get(function () {
   if (this.convertedAt && this.createdAt) {
-    return Math.floor((this.convertedAt - this.createdAt) / (1000 * 60 * 60 * 24)) // days
+    return Math.floor((this.convertedAt - this.createdAt) / (1000 * 60 * 60 * 24)); // days
   }
-  return null
-})
+  return null;
+});
 
 // Instance methods
 leadSchema.methods.updateStatus = async function (newStatus, userId) {
-  this.status = newStatus
+  this.status = newStatus;
 
   // Update timestamp based on status
   switch (newStatus) {
-    case "contacted":
-      this.contactedAt = new Date()
-      break
-    case "converted":
-      this.convertedAt = new Date()
-      break
-    case "closed":
-      this.closedAt = new Date()
-      break
+  case "contacted":
+    this.contactedAt = new Date();
+    break;
+  case "converted":
+    this.convertedAt = new Date();
+    break;
+  case "closed":
+    this.closedAt = new Date();
+    break;
   }
 
   // Add a note about status change
@@ -141,39 +141,39 @@ leadSchema.methods.updateStatus = async function (newStatus, userId) {
     note: `Status changed to ${newStatus}`,
     addedBy: userId,
     addedAt: new Date(),
-  })
+  });
 
-  return this.save()
-}
+  return this.save();
+};
 
 leadSchema.methods.addNote = function (note, userId) {
   this.notes.push({
     note: note,
     addedBy: userId,
     addedAt: new Date(),
-  })
-  return this.save()
-}
+  });
+  return this.save();
+};
 
 leadSchema.methods.softDelete = function () {
-  this.deletedAt = new Date()
-  return this.save()
-}
+  this.deletedAt = new Date();
+  return this.save();
+};
 
 // Static methods
 leadSchema.statics.findActive = function () {
-  return this.find({ deletedAt: null })
-}
+  return this.find({ deletedAt: null });
+};
 
 leadSchema.statics.getPartnerStats = async function (partnerId, dateRange = {}) {
-  const { startDate, endDate } = dateRange
-  const matchQuery = { partnerId, deletedAt: null }
+  const { startDate, endDate } = dateRange;
+  const matchQuery = { partnerId, deletedAt: null };
 
   if (startDate && endDate) {
     matchQuery.createdAt = {
       $gte: new Date(startDate),
       $lte: new Date(endDate),
-    }
+    };
   }
 
   const stats = await this.aggregate([
@@ -195,29 +195,29 @@ leadSchema.statics.getPartnerStats = async function (partnerId, dateRange = {}) 
         },
       },
     },
-  ])
+  ]);
 
   // Get total leads and conversion rate
-  const totalLeads = await this.countDocuments(matchQuery)
-  const convertedLeads = await this.countDocuments({ ...matchQuery, status: "converted" })
-  const conversionRate = totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0
+  const totalLeads = await this.countDocuments(matchQuery);
+  const convertedLeads = await this.countDocuments({ ...matchQuery, status: "converted" });
+  const conversionRate = totalLeads > 0 ? (convertedLeads / totalLeads) * 100 : 0;
 
   return {
     totalLeads,
     conversionRate: Math.round(conversionRate * 100) / 100,
     statusBreakdown: stats,
-  }
-}
+  };
+};
 
 leadSchema.statics.getAdminStats = async function (dateRange = {}) {
-  const { startDate, endDate } = dateRange
-  const matchQuery = { deletedAt: null }
+  const { startDate, endDate } = dateRange;
+  const matchQuery = { deletedAt: null };
 
   if (startDate && endDate) {
     matchQuery.createdAt = {
       $gte: new Date(startDate),
       $lte: new Date(endDate),
-    }
+    };
   }
 
   const [statusStats, partnerStats, dailyStats] = await Promise.all([
@@ -293,16 +293,16 @@ leadSchema.statics.getAdminStats = async function (dateRange = {}) {
       },
       { $sort: { _id: 1 } },
     ]),
-  ])
+  ]);
 
-  const totalLeads = await this.countDocuments(matchQuery)
+  const totalLeads = await this.countDocuments(matchQuery);
 
   return {
     totalLeads,
     statusBreakdown: statusStats,
     topPartners: partnerStats,
     dailyTrend: dailyStats,
-  }
-}
+  };
+};
 
-module.exports = mongoose.model("Lead", leadSchema)
+module.exports = mongoose.model("Lead", leadSchema);

@@ -1,14 +1,13 @@
-const express = require("express")
-const Partner = require("../models/Partner")
-const User = require("../models/User")
-const { sanitizeInput } = require("../middleware/security")
-const Joi = require("joi")
+const express = require("express");
+const Partner = require("../models/Partner");
+const { sanitizeInput } = require("../middleware/security");
+const Joi = require("joi");
 const { ObjectId } = require("mongoose").Types;
 
-const router = express.Router()
+const router = express.Router();
 
 // Apply middleware
-router.use(sanitizeInput)
+router.use(sanitizeInput);
 
 // Validation schemas
 const searchPartnersSchema = Joi.object({
@@ -26,18 +25,18 @@ const searchPartnersSchema = Joi.object({
     .default("avgRating"),
   sortOrder: Joi.string().valid("asc", "desc").default("desc"),
   servingLocation: Joi.string().trim().optional(),
-})
+});
 
 // Get all verified partners with pagination and filters (Public API)
 router.get("/partners", async (req, res) => {
   try {
-    const { error, value } = searchPartnersSchema.validate(req.query)
+    const { error, value } = searchPartnersSchema.validate(req.query);
     if (error) {
       return res.status(400).json({
         success: false,
         message: "Validation error",
         details: error.details[0].message,
-      })
+      });
     }
 
     const {
@@ -53,37 +52,37 @@ router.get("/partners", async (req, res) => {
       sortBy,
       sortOrder,
       servingLocation,
-    } = value
+    } = value;
 
     // Build aggregation pipeline
-    const pipeline = []
+    const pipeline = [];
 
     // Match only verified and active partners
     const matchStage = {
       verified: true,
       deletedAt: null,
       onboardingStatus: "verified",
-    }
+    };
 
     // Add filters
     if (partnerType) {
-      matchStage.partnerType = partnerType
+      matchStage.partnerType = partnerType;
     }
 
     if (minRating) {
-      matchStage.avgRating = { $gte: minRating }
+      matchStage.avgRating = { $gte: minRating };
     }
 
     if (specialization) {
-      matchStage.specializations = { $in: [specialization] }
+      matchStage.specializations = { $in: [specialization] };
     }
 
     if (location || servingLocation) {
-      const locationFilter = location || servingLocation
-      matchStage.servingLocations = { $in: [locationFilter] }
+      const locationFilter = location || servingLocation;
+      matchStage.servingLocations = { $in: [locationFilter] };
     }
 
-    pipeline.push({ $match: matchStage })
+    pipeline.push({ $match: matchStage });
 
     // Lookup user information
     pipeline.push({
@@ -93,9 +92,9 @@ router.get("/partners", async (req, res) => {
         foreignField: "_id",
         as: "user",
       },
-    })
+    });
 
-    pipeline.push({ $unwind: "$user" })
+    pipeline.push({ $unwind: "$user" });
 
     // Add search functionality
     if (search) {
@@ -108,18 +107,18 @@ router.get("/partners", async (req, res) => {
             { servingLocations: { $in: [new RegExp(search, "i")] } },
           ],
         },
-      })
+      });
     }
 
     // Add price filtering based on services
     if (minPrice || maxPrice) {
-      const priceMatch = {}
-      if (minPrice) priceMatch["services.basePrice"] = { $gte: minPrice }
+      const priceMatch = {};
+      if (minPrice) priceMatch["services.basePrice"] = { $gte: minPrice };
       if (maxPrice) {
         priceMatch["services.basePrice"] = {
           ...priceMatch["services.basePrice"],
           $lte: maxPrice,
-        }
+        };
       }
 
       pipeline.push({
@@ -129,7 +128,7 @@ router.get("/partners", async (req, res) => {
             { "services.0": { $exists: false } }, // Include partners with no services listed
           ],
         },
-      })
+      });
     }
 
     // Project only public fields
@@ -186,26 +185,26 @@ router.get("/partners", async (req, res) => {
         // Location-based pricing (if available)
         hasLocationPricing: { $gt: [{ $size: { $objectToArray: "$locationPricing" } }, 0] },
       },
-    })
+    });
 
     // Add sorting
-    const sortStage = {}
-    sortStage[sortBy] = sortOrder === "desc" ? -1 : 1
-    pipeline.push({ $sort: sortStage })
+    const sortStage = {};
+    sortStage[sortBy] = sortOrder === "desc" ? -1 : 1;
+    pipeline.push({ $sort: sortStage });
 
     // Get total count for pagination
-    const countPipeline = [...pipeline, { $count: "total" }]
-    const totalResult = await Partner.aggregate(countPipeline)
-    const total = totalResult[0]?.total || 0
+    const countPipeline = [...pipeline, { $count: "total" }];
+    const totalResult = await Partner.aggregate(countPipeline);
+    const total = totalResult[0]?.total || 0;
 
     // Add pagination
-    pipeline.push({ $skip: (page - 1) * limit })
-    pipeline.push({ $limit: limit })
+    pipeline.push({ $skip: (page - 1) * limit });
+    pipeline.push({ $limit: limit });
 
-    const partners = await Partner.aggregate(pipeline)
+    const partners = await Partner.aggregate(pipeline);
 
     // Get available filters for frontend
-    const availableFilters = await getAvailableFilters()
+    const availableFilters = await getAvailableFilters();
 
     res.json({
       success: true,
@@ -232,21 +231,21 @@ router.get("/partners", async (req, res) => {
           sortOrder,
         },
       },
-    })
+    });
   } catch (error) {
-    console.error("Get public partners error:", error)
+    console.error("Get public partners error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch partners",
-    })
+    });
   }
-})
+});
 
 // Get single partner profile (Public API)
 router.get("/partners/:partnerId", async (req, res) => {
   try {
     
-    const { partnerId } = req.params
+    const { partnerId } = req.params;
 
     const partner = await Partner.aggregate([
       {
@@ -318,13 +317,13 @@ router.get("/partners/:partnerId", async (req, res) => {
           // userId: 0,
         },
       },
-    ])
+    ]);
 
     if (!partner || partner.length === 0) {
       return res.status(404).json({
         success: false,
         message: "Partner not found or not available",
-      })
+      });
     }
 
     // Get similar partners (same specializations or location)
@@ -366,7 +365,7 @@ router.get("/partners/:partnerId", async (req, res) => {
       },
       { $sort: { avgRating: -1 } },
       { $limit: 6 },
-    ])
+    ]);
 
     res.json({
       success: true,
@@ -374,39 +373,39 @@ router.get("/partners/:partnerId", async (req, res) => {
         partner: partner[0],
         similarPartners,
       },
-    })
+    });
   } catch (error) {
-    console.error("Get partner profile error:", error)
+    console.error("Get partner profile error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch partner profile",
-    })
+    });
   }
-})
+});
 
 // Get partner portfolio images (Public API)
 router.get("/partners/:partnerId/portfolio", async (req, res) => {
   try {
-    const { partnerId } = req.params
-    const { page = 1, limit = 12 } = req.query
+    const { partnerId } = req.params;
+    const { page = 1, limit = 12 } = req.query;
 
     const partner = await Partner.findOne({
       _id: partnerId,
       verified: true,
       deletedAt: null,
-    }).select("portfolio companyName")
+    }).select("portfolio companyName");
 
     if (!partner) {
       return res.status(404).json({
         success: false,
         message: "Partner not found",
-      })
+      });
     }
 
-    const startIndex = (page - 1) * limit
-    const endIndex = startIndex + Number.parseInt(limit)
-    const portfolioImages = partner.portfolio.slice(startIndex, endIndex)
-    const total = partner.portfolio.length
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + Number.parseInt(limit);
+    const portfolioImages = partner.portfolio.slice(startIndex, endIndex);
+    const total = partner.portfolio.length;
 
     res.json({
       success: true,
@@ -422,44 +421,44 @@ router.get("/partners/:partnerId/portfolio", async (req, res) => {
           hasPrev: page > 1,
         },
       },
-    })
+    });
   } catch (error) {
-    console.error("Get partner portfolio error:", error)
+    console.error("Get partner portfolio error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch portfolio",
-    })
+    });
   }
-})
+});
 
 // Get available filter options (Public API)
 router.get("/partners/filters/options", async (req, res) => {
   try {
-    const filters = await getAvailableFilters()
+    const filters = await getAvailableFilters();
 
     res.json({
       success: true,
       data: { filters },
-    })
+    });
   } catch (error) {
-    console.error("Get filter options error:", error)
+    console.error("Get filter options error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch filter options",
-    })
+    });
   }
-})
+});
 
 // Search suggestions (Public API)
 router.get("/partners/search/suggestions", async (req, res) => {
   try {
-    const { q } = req.query
+    const { q } = req.query;
 
     if (!q || q.length < 2) {
       return res.json({
         success: true,
         data: { suggestions: [] },
-      })
+      });
     }
 
     const suggestions = await Partner.aggregate([
@@ -497,20 +496,20 @@ router.get("/partners/search/suggestions", async (req, res) => {
         },
       },
       { $limit: 10 },
-    ])
+    ]);
 
     // Also get location and specialization suggestions
     const locationSuggestions = await Partner.distinct("servingLocations", {
       verified: true,
       deletedAt: null,
       servingLocations: { $regex: q, $options: "i" },
-    })
+    });
 
     const specializationSuggestions = await Partner.distinct("specializations", {
       verified: true,
       deletedAt: null,
       specializations: { $regex: q, $options: "i" },
-    })
+    });
 
     res.json({
       success: true,
@@ -521,20 +520,20 @@ router.get("/partners/search/suggestions", async (req, res) => {
           specializations: specializationSuggestions.slice(0, 5),
         },
       },
-    })
+    });
   } catch (error) {
-    console.error("Get search suggestions error:", error)
+    console.error("Get search suggestions error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch suggestions",
-    })
+    });
   }
-})
+});
 
 // Get featured/top partners (Public API)
 router.get("/partners/featured", async (req, res) => {
   try {
-    const { limit = 8 } = req.query
+    const { limit = 8 } = req.query;
 
     const featuredPartners = await Partner.aggregate([
       {
@@ -584,26 +583,26 @@ router.get("/partners/featured", async (req, res) => {
         },
       },
       { $limit: Number.parseInt(limit) },
-    ])
+    ]);
 
     res.json({
       success: true,
       data: { partners: featuredPartners },
-    })
+    });
   } catch (error) {
-    console.error("Get featured partners error:", error)
+    console.error("Get featured partners error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch featured partners",
-    })
+    });
   }
-})
+});
 
 // Get partners by location (Public API)
 router.get("/partners/by-location/:location", async (req, res) => {
   try {
-    const { location } = req.params
-    const { page = 1, limit = 12, sortBy = "avgRating", sortOrder = "desc" } = req.query
+    const { location } = req.params;
+    const { page = 1, limit = 12, sortBy = "avgRating", sortOrder = "desc" } = req.query;
 
     const partners = await Partner.aggregate([
       {
@@ -640,13 +639,13 @@ router.get("/partners/by-location/:location", async (req, res) => {
       { $sort: { [sortBy]: sortOrder === "desc" ? -1 : 1 } },
       { $skip: (page - 1) * limit },
       { $limit: Number.parseInt(limit) },
-    ])
+    ]);
 
     const total = await Partner.countDocuments({
       verified: true,
       deletedAt: null,
       servingLocations: { $in: [location] },
-    })
+    });
 
     res.json({
       success: true,
@@ -660,15 +659,15 @@ router.get("/partners/by-location/:location", async (req, res) => {
           pages: Math.ceil(total / limit),
         },
       },
-    })
+    });
   } catch (error) {
-    console.error("Get partners by location error:", error)
+    console.error("Get partners by location error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch partners by location",
-    })
+    });
   }
-})
+});
 
 // Get partners statistics (Public API)
 router.get("/stats", async (req, res) => {
@@ -685,7 +684,7 @@ router.get("/stats", async (req, res) => {
         { $match: { verified: true, deletedAt: null } },
         { $group: { _id: null, totalProjects: { $sum: "$projectStats.total" } } },
       ]),
-    ])
+    ]);
 
     res.json({
       success: true,
@@ -696,15 +695,15 @@ router.get("/stats", async (req, res) => {
         specializations: stats[3].length,
         totalProjects: stats[4][0]?.totalProjects || 0,
       },
-    })
+    });
   } catch (error) {
-    console.error("Get public stats error:", error)
+    console.error("Get public stats error:", error);
     res.status(500).json({
       success: false,
       message: "Failed to fetch statistics",
-    })
+    });
   }
-})
+});
 
 // Helper function to get available filters
 async function getAvailableFilters() {
@@ -761,7 +760,7 @@ async function getAvailableFilters() {
           },
         },
       ]),
-    ])
+    ]);
 
     return {
       locations: locations.filter(Boolean).sort(),
@@ -769,17 +768,17 @@ async function getAvailableFilters() {
       partnerTypes: partnerTypes.filter(Boolean),
       ratingRanges: ratingRanges.sort((a, b) => b._id.localeCompare(a._id)),
       priceRanges: priceRanges,
-    }
+    };
   } catch (error) {
-    console.error("Error getting available filters:", error)
+    console.error("Error getting available filters:", error);
     return {
       locations: [],
       specializations: [],
       partnerTypes: [],
       ratingRanges: [],
       priceRanges: [],
-    }
+    };
   }
 }
 
-module.exports = router
+module.exports = router;
