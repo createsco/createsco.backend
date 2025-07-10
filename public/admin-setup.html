@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pixisphere Admin Setup</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      color: #333;
+    }
+    .container {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      padding: 30px;
+      width: 100%;
+      max-width: 450px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      color: #2563eb;
+      margin-bottom: 10px;
+      font-size: 24px;
+    }
+    .header p {
+      color: #666;
+      margin: 0;
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+    }
+    button {
+      background-color: #2563eb;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 12px 20px;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      width: 100%;
+      transition: background-color 0.2s;
+    }
+    button:hover {
+      background-color: #1d4ed8;
+    }
+    button:disabled {
+      background-color: #93c5fd;
+      cursor: not-allowed;
+    }
+    .error {
+      color: #dc2626;
+      margin-top: 5px;
+      font-size: 14px;
+    }
+    .success {
+      color: #16a34a;
+      margin-top: 5px;
+      font-size: 14px;
+    }
+    .message-box {
+      padding: 15px;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .error-box {
+      background-color: #fee2e2;
+      border: 1px solid #fecaca;
+      color: #b91c1c;
+    }
+    .success-box {
+      background-color: #dcfce7;
+      border: 1px solid #bbf7d0;
+      color: #15803d;
+    }
+    .info-box {
+      background-color: #dbeafe;
+      border: 1px solid #bfdbfe;
+      color: #1e40af;
+    }
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s ease-in-out infinite;
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    .hidden {
+      display: none;
+    }
+    .debug-info {
+      background-color: #f3f4f6;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      padding: 10px;
+      margin-top: 10px;
+      font-size: 12px;
+      color: #374151;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    .auth-method {
+      margin-bottom: 20px;
+      padding: 15px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      background-color: #f9fafb;
+    }
+    .auth-method h3 {
+      margin: 0 0 10px 0;
+      color: #374151;
+    }
+    .auth-method p {
+      margin: 0 0 15px 0;
+      color: #6b7280;
+      font-size: 14px;
+    }
+    .claims-info {
+      background-color: #f0f9ff;
+      border: 1px solid #0ea5e9;
+      border-radius: 4px;
+      padding: 10px;
+      margin-top: 15px;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Pixisphere Admin Setup</h1>
+      <p>First-time super admin registration</p>
+    </div>
+    
+    <div id="loading-message" class="message-box info-box">
+      Checking system status...
+    </div>
+    
+    <div id="error-message" class="message-box error-box hidden"></div>
+    <div id="success-message" class="message-box success-box hidden"></div>
+    
+    <!-- Method 1: Direct Authentication -->
+    <div id="direct-auth-method" class="auth-method hidden">
+      <h3>🔐 Direct Authentication</h3>
+      <p>Use your Firebase email and password to create the super admin account.</p>
+      
+      <form id="direct-auth-form">
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" name="email" required placeholder="Enter your Firebase email">
+        </div>
+        
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required placeholder="Enter your Firebase password">
+        </div>
+        
+        <div class="form-group">
+          <label for="setup-key">Setup Key</label>
+          <input type="password" id="setup-key" name="setupKey" required placeholder="Enter the setup key">
+          <div class="error" id="setup-key-error"></div>
+        </div>
+        
+        <button type="submit" id="direct-submit-button">
+          <span id="direct-loading-spinner" class="loading hidden"></span>
+          <span id="direct-button-text">Create Super Admin</span>
+        </button>
+      </form>
+    </div>
+    
+    <!-- Method 2: Token-based Authentication -->
+    <div id="token-auth-method" class="auth-method hidden">
+      <h3>🎫 Token-based Authentication</h3>
+      <p>If you already have a Firebase ID token, you can use it directly.</p>
+      
+      <form id="token-auth-form">
+        <div class="form-group">
+          <label for="firebase-token">Firebase ID Token</label>
+          <textarea id="firebase-token" name="firebaseToken" required placeholder="Paste your Firebase ID token here" rows="4" style="resize: vertical;"></textarea>
+        </div>
+        
+        <div class="form-group">
+          <label for="token-setup-key">Setup Key</label>
+          <input type="password" id="token-setup-key" name="setupKey" required placeholder="Enter the setup key">
+          <div class="error" id="token-setup-key-error"></div>
+        </div>
+        
+        <button type="submit" id="token-submit-button">
+          <span id="token-loading-spinner" class="loading hidden"></span>
+          <span id="token-button-text">Create Super Admin</span>
+        </button>
+      </form>
+    </div>
+    
+    <!-- Claims Information -->
+    <div id="claims-info" class="claims-info hidden">
+      <strong>✅ Admin Created Successfully!</strong><br>
+      <div id="claims-content"></div>
+      <p style="margin: 10px 0 0 0;">
+        <strong>Important:</strong> You may need to sign out and sign back in to your frontend application for the admin claims to take effect.
+      </p>
+    </div>
+    
+    <!-- Debug Information -->
+    <div id="debug-info" class="debug-info hidden">
+      <strong>Debug Information:</strong><br>
+      <div id="debug-content"></div>
+    </div>
+    
+    <button onclick="toggleDebug()" style="margin-top: 10px; background: #6b7280; font-size: 12px; padding: 5px 10px;">
+      Toggle Debug Info
+    </button>
+  </div>
+
+  <!-- Firebase SDK with updated version -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  
+  <script>
+    // Debug logging
+    const debugLog = (message, data = null) => {
+      const timestamp = new Date().toLocaleTimeString();
+      const logMessage = `[${timestamp}] ${message}`;
+      console.log(logMessage, data);
+      
+      const debugContent = document.getElementById('debug-content');
+      if (debugContent) {
+        const logEntry = document.createElement('div');
+        logEntry.innerHTML = `${logMessage}${data ? ': ' + JSON.stringify(data, null, 2) : ''}`;
+        debugContent.appendChild(logEntry);
+        debugContent.scrollTop = debugContent.scrollHeight;
+      }
+    };
+    
+    const toggleDebug = () => {
+      const debugInfo = document.getElementById('debug-info');
+      debugInfo.classList.toggle('hidden');
+    };
+    
+    // Firebase configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyBOY7yFZaKZE-Q0NXuB61jZo4hyQP0CVVU",
+        authDomain: "pixisphere770.firebaseapp.com",
+        projectId: "pixisphere770",
+        storageBucket: "pixisphere770.firebasestorage.app",
+        messagingSenderId: "572955963854",
+        appId: "1:572955963854:web:2eebadbe2820c97e3ffb9f",
+        measurementId: "G-9GYTLKL5YB"
+    };
+    
+    // DOM elements
+    const loadingMessage = document.getElementById('loading-message');
+    const errorMessage = document.getElementById('error-message');
+    const successMessage = document.getElementById('success-message');
+    const directAuthMethod = document.getElementById('direct-auth-method');
+    const tokenAuthMethod = document.getElementById('token-auth-method');
+    const claimsInfo = document.getElementById('claims-info');
+    const claimsContent = document.getElementById('claims-content');
+    
+    // Get API base URL
+    const getApiBaseUrl = () => {
+      return window.location.origin;
+    };
+    
+    // Show error message
+    const showError = (message) => {
+      errorMessage.textContent = message;
+      errorMessage.classList.remove('hidden');
+      successMessage.classList.add('hidden');
+    };
+    
+    // Show success message
+    const showSuccess = (message) => {
+      successMessage.textContent = message;
+      successMessage.classList.remove('hidden');
+      errorMessage.classList.add('hidden');
+    };
+    
+    // Hide all messages
+    const hideMessages = () => {
+      errorMessage.classList.add('hidden');
+      successMessage.classList.add('hidden');
+    };
+    
+    // Show claims information
+    const showClaimsInfo = (claims) => {
+      claimsContent.innerHTML = `
+        <strong>Firebase Claims Set:</strong><br>
+        • Admin: ${claims.admin ? '✅' : '❌'}<br>
+        • User Type: ${claims.userType}<br>
+        • Role: ${claims.role}<br>
+        • Verified: ${claims.verified ? '✅' : '❌'}
+      `;
+      claimsInfo.classList.remove('hidden');
+    };
+    
+    // Check if super admin exists
+    async function checkSuperAdminExists() {
+      debugLog("Starting super admin check...");
+      
+      try {
+        const apiUrl = getApiBaseUrl();
+        const checkUrl = `${apiUrl}/api/v1/admin-setup/check-setup`;
+        debugLog("Making request to", checkUrl);
+        
+        const response = await fetch(checkUrl, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        debugLog("Response status", response.status);
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        debugLog("Response data", data);
+        
+        if (data.success) {
+          if (data.data.hasSuperAdmin) {
+            // Super admin already exists, show error
+            loadingMessage.classList.add('hidden');
+            showError('A super admin already exists in the system. This setup page is no longer available.');
+            debugLog("Super admin already exists");
+          } else {
+            // No super admin exists, show auth methods
+            loadingMessage.classList.add('hidden');
+            directAuthMethod.classList.remove('hidden');
+            tokenAuthMethod.classList.remove('hidden');
+            debugLog("No super admin exists, showing auth methods");
+          }
+        } else {
+          throw new Error(data.message || 'API returned success: false');
+        }
+      } catch (error) {
+        debugLog("Error in checkSuperAdminExists", error);
+        loadingMessage.classList.add('hidden');
+        showError('Error checking system status: ' + (error.message || 'Unknown error'));
+      }
+    }
+    
+    // Initialize Firebase (with error handling)
+    let firebaseInitialized = false;
+    
+    const initializeFirebase = () => {
+      try {
+        debugLog("Attempting to initialize Firebase...");
+        firebase.initializeApp(firebaseConfig);
+        firebaseInitialized = true;
+        debugLog("Firebase initialized successfully");
+      } catch (error) {
+        debugLog("Firebase initialization failed", error);
+        firebaseInitialized = false;
+      }
+    };
+    
+    // Handle direct authentication form
+    document.getElementById('direct-auth-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      debugLog("Direct auth form submission started");
+      
+      if (!firebaseInitialized) {
+        showError("Firebase is not initialized. Please try the token-based method instead.");
+        return;
+      }
+      
+      hideMessages();
+      document.getElementById('setup-key-error').textContent = '';
+      
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const setupKey = document.getElementById('setup-key').value;
+      
+      const submitButton = document.getElementById('direct-submit-button');
+      const loadingSpinner = document.getElementById('direct-loading-spinner');
+      const buttonText = document.getElementById('direct-button-text');
+      
+      // Show loading state
+      submitButton.disabled = true;
+      loadingSpinner.classList.remove('hidden');
+      buttonText.textContent = 'Authenticating...';
+      
+      try {
+        debugLog("Starting Firebase authentication...");
+        
+        const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
+        const user = userCredential.user;
+        
+        debugLog("Firebase auth successful", { 
+          uid: user.uid, 
+          email: user.email, 
+          emailVerified: user.emailVerified 
+        });
+        
+        buttonText.textContent = 'Creating Admin...';
+        
+        const idToken = await user.getIdToken();
+        debugLog("ID token obtained");
+        
+        const result = await createSuperAdmin(idToken, setupKey);
+        
+        // Show claims information
+        if (result && result.firebaseClaims) {
+          showClaimsInfo(result.firebaseClaims);
+        }
+        
+      } catch (error) {
+        debugLog("Error in direct auth", error);
+        
+        let errorText = 'Authentication failed';
+        if (error.code) {
+          switch (error.code) {
+            case 'auth/user-not-found':
+              errorText = 'No user found with this email address';
+              break;
+            case 'auth/wrong-password':
+              errorText = 'Incorrect password';
+              break;
+            case 'auth/invalid-email':
+              errorText = 'Invalid email address';
+              break;
+            case 'auth/user-disabled':
+              errorText = 'This user account has been disabled';
+              break;
+            case 'auth/too-many-requests':
+              errorText = 'Too many failed attempts. Please try again later';
+              break;
+            default:
+              errorText = error.message || 'Authentication failed';
+          }
+        } else {
+          errorText = error.message || 'Network error occurred';
+        }
+        
+        showError(errorText);
+      } finally {
+        submitButton.disabled = false;
+        loadingSpinner.classList.add('hidden');
+        buttonText.textContent = 'Create Super Admin';
+      }
+    });
+    
+    // Handle token-based authentication form
+    document.getElementById('token-auth-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      debugLog("Token auth form submission started");
+      
+      hideMessages();
+      document.getElementById('token-setup-key-error').textContent = '';
+      
+      const firebaseToken = document.getElementById('firebase-token').value.trim();
+      const setupKey = document.getElementById('token-setup-key').value;
+      
+      if (!firebaseToken) {
+        showError("Please provide a Firebase ID token");
+        return;
+      }
+      
+      const submitButton = document.getElementById('token-submit-button');
+      const loadingSpinner = document.getElementById('token-loading-spinner');
+      const buttonText = document.getElementById('token-button-text');
+      
+      // Show loading state
+      submitButton.disabled = true;
+      loadingSpinner.classList.remove('hidden');
+      buttonText.textContent = 'Creating Admin...';
+      
+      try {
+        const result = await createSuperAdmin(firebaseToken, setupKey);
+        
+        // Show claims information
+        if (result && result.firebaseClaims) {
+          showClaimsInfo(result.firebaseClaims);
+        }
+      } catch (error) {
+        debugLog("Error in token auth", error);
+        showError(error.message || 'Failed to create super admin');
+      } finally {
+        submitButton.disabled = false;
+        loadingSpinner.classList.add('hidden');
+        buttonText.textContent = 'Create Super Admin';
+      }
+    });
+    
+    // Create super admin function
+    async function createSuperAdmin(idToken, setupKey) {
+      debugLog("Creating super admin with token");
+      
+      const apiUrl = getApiBaseUrl();
+      const createUrl = `${apiUrl}/api/v1/admin-setup/create-super-admin`;
+      
+      const response = await fetch(createUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({ setupKey })
+      });
+      
+      debugLog("Create super admin response status", response.status);
+      
+      const data = await response.json();
+      debugLog("Create super admin response data", data);
+      
+      if (response.ok && data.success) {
+        debugLog("Super admin created successfully");
+        directAuthMethod.classList.add('hidden');
+        tokenAuthMethod.classList.add('hidden');
+        showSuccess('Super admin created successfully! Firebase claims have been set.');
+        
+        return data.data; // Return the data for claims display
+      } else {
+        if (data.message && data.message.includes('setup key')) {
+          const errorElement = document.getElementById('setup-key-error') || document.getElementById('token-setup-key-error');
+          if (errorElement) {
+            errorElement.textContent = data.message;
+          }
+        } else {
+          throw new Error(data.message || 'Failed to create super admin');
+        }
+      }
+    }
+    
+    // Initialize when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+      debugLog("DOM loaded, starting initialization");
+      
+      // Try to initialize Firebase
+      initializeFirebase();
+      
+      // Check super admin status
+      setTimeout(() => {
+        checkSuperAdminExists();
+      }, 100);
+    });
+    
+    // Global error handlers
+    window.addEventListener('error', function(e) {
+      debugLog("Global error caught", { 
+        message: e.message, 
+        filename: e.filename, 
+        lineno: e.lineno, 
+        colno: e.colno 
+      });
+    });
+    
+    window.addEventListener('unhandledrejection', function(e) {
+      debugLog("Unhandled promise rejection", e.reason);
+    });
+  </script>
+</body>
+</html>
