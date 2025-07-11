@@ -12,11 +12,35 @@ require("dotenv").config();
 
 // Initialize Firebase Admin
 const admin = require("firebase-admin");
-const serviceAccount = require("./config/firebase-service-account.json");
+let serviceAccount;
+
+// Attempt to load credentials from local file first (useful for local development)
+try {
+  // eslint-disable-next-line global-require, import/no-dynamic-require
+  serviceAccount = require("./config/firebase-service-account.json");
+} catch (fileErr) {
+  // Fallback: expect the credentials JSON to be provided as a single env variable
+  if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    try {
+      serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+    } catch (parseErr) {
+      console.error("Failed to parse FIREBASE_SERVICE_ACCOUNT env variable. Make sure it contains valid JSON.");
+      console.error(parseErr);
+    }
+  }
+}
+
+if (!serviceAccount) {
+  console.error(
+    "Firebase service account credentials missing. Provide ./config/firebase-service-account.json (for local) or set FIREBASE_SERVICE_ACCOUNT env variable (for production).",
+  );
+  process.exit(1);
+}
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  projectId: process.env.FIREBASE_PROJECT_ID,
+  // Prefer explicitly set project ID via env, fallback to the one in the service account JSON
+  projectId: process.env.FIREBASE_PROJECT_ID || serviceAccount.project_id,
 });
 
 // Connect to MongoDB
