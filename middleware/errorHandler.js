@@ -38,6 +38,7 @@ const errorHandler = (err, req, res, _next) => {
 
 const notFound = (req, res, next) => {
   const error = new Error(`Not found - ${req.originalUrl}`);
+  error.statusCode = 404; // Explicitly mark as 404 so errorHandler doesn’t default to 500
   next(error);
 };
 

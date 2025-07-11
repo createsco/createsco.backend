@@ -190,6 +190,15 @@ app.get("/admin-setup", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "admin-setup.html"));
 });
 
+// Root route – useful for Render health checks / simple status
+app.get("/", (req, res) => {
+  res.status(200).json({
+    status: "OK",
+    message: "Createsco API is running",
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Health check
 app.get("/health", (req, res) => {
   res.status(200).json({
