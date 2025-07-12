@@ -5,8 +5,7 @@ const userSchema = new mongoose.Schema(
     firebaseUid: {
       type: String,
       required: true,
-      unique: true,
-      index: true,
+      unique: true, // unique already creates an index
     },
     username: {
       type: String,
@@ -83,11 +82,9 @@ const userSchema = new mongoose.Schema(
   },
 );
 
-// Indexes
-userSchema.index({ email: 1 });
-userSchema.index({ username: 1 });
+// Additional indexes
+// Compound and non-unique indexes (skip those already handled by unique/index in field defs)
 userSchema.index({ userType: 1 });
-userSchema.index({ firebaseUid: 1 });
 userSchema.index({ deletedAt: 1 });
 
 // Virtual for full phone number

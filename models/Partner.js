@@ -232,7 +232,6 @@ partnerSchema.methods.updateOnboardingStatus = async function () {
 };
 
 // Indexes
-partnerSchema.index({ userId: 1 });
 partnerSchema.index({ verified: 1 });
 partnerSchema.index({ avgRating: -1 });
 partnerSchema.index({ servingLocations: 1 });

@@ -40,7 +40,6 @@ const adminSchema = new mongoose.Schema(
 );
 
 // Indexes
-adminSchema.index({ userId: 1 });
 adminSchema.index({ role: 1 });
 adminSchema.index({ isActive: 1 });
 

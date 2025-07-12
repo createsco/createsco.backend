@@ -6,6 +6,14 @@ const { ObjectId } = require("mongoose").Types;
 
 const router = express.Router();
 
+// Root public endpoint
+router.get("/", (req, res) => {
+  res.json({
+    success: true,
+    message: "Public API root. Try /api/v1/public/partners or other endpoints.",
+  });
+});
+
 // Apply middleware
 router.use(sanitizeInput);
 

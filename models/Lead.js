@@ -6,13 +6,11 @@ const leadSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      index: true,
     },
     partnerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      index: true,
     },
     message: {
       type: String,
@@ -24,7 +22,6 @@ const leadSchema = new mongoose.Schema(
       type: String,
       enum: ["new", "contacted", "converted", "closed"],
       default: "new",
-      index: true,
     },
     // Additional useful fields
     contactMethod: {

@@ -20,7 +20,6 @@ const clientSchema = new mongoose.Schema(
   },
 );
 
-// Indexes
-clientSchema.index({ userId: 1 });
+// No additional indexes required; unique field above already creates an index
 
 module.exports = mongoose.model("Client", clientSchema);
